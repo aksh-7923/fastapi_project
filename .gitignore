@@ -3,3 +3,4 @@ venv/
 .env
 raw.py
 utils.py
+.idea/

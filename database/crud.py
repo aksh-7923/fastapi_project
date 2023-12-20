@@ -111,8 +111,8 @@ class Crud:
 
         query = f"Update {table_name} set "  +  "{set_clause} {where_clause}"
         set_clause = [f" {value[0]} = '{value[1]}'" if isinstance(value[1], str) else f" {value[0]} = {value[1]}"
-         for value in new_value if value[1] is not None and value[0]!="EmployeeID" ]
-        set_clause = " and ".join(set_clause)
+         for value in new_value if value[1] is not None]
+        set_clause = " , ".join(set_clause)
 
         where_clause = [f" {value[0]} = '{value[1]}'" if isinstance(value[1], str) else f" {value[0]} = {value[1]}"
          for value in old_value if value[1] is not None]

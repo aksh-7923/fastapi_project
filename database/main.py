@@ -16,7 +16,6 @@ cursor.execute('''DROP TABLE IF EXISTS Employee''')
 # Create a table
 cursor.execute('''
     CREATE TABLE IF NOT EXISTS Employee (
-        EmployeeID INTEGER PRIMARY KEY,
         FirstName TEXT,
         LastName TEXT,
         Gender TEXT,
@@ -34,8 +33,7 @@ def insert_record(number_of_records=200):
         This function generates random record and inserts it into the database
     """
 
-    for i in range(1, number_of_records+1):
-        employee_id = i
+    for i in range(number_of_records):
         first_name = fake.first_name()
         last_name = fake.last_name()
         gender = random.choice(['M', 'F'])
@@ -43,8 +41,8 @@ def insert_record(number_of_records=200):
         email = first_name.lower() + last_name.lower() + '@gmail.com'
         position = fake.job()
 
-        cursor.execute('''INSERT INTO Employee VALUES (?, ?, ?, ?, ?, ?, ?)''', 
-        (employee_id, first_name, last_name, gender, dob, email, position))
+        cursor.execute('''INSERT INTO Employee VALUES (?, ?, ?, ?, ?, ?)''', 
+        (first_name, last_name, gender, dob, email, position))
 
 insert_record()
 
