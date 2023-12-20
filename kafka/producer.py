@@ -59,9 +59,10 @@ class Producer:
         self.produce(topic, value=message)
 
 #creating producer
+bootstrap_servers = '0.0.0.0:9092'
 producer1 = Producer.create_producer(bootstrap_servers, 'python-producer')
 
-#producer1.send_msg()
+producer1.send_msg("Hello kafka!!")
 
 #  Wait for any outstanding messages to be delivered and delivery reports received
 producer.flush()
