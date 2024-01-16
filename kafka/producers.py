@@ -35,24 +35,28 @@ if __name__=="__main__":
     
     condition = {"Gender": "'F'"}
     producer1 = Producers("producer1")
-    # producer1.get_producer("get", condition)
 
-    old = {'FirstName': 'Roberto', 'LastName': 'Wright', 'Gender': 'F', 'DateOfBirth': '1993-04-28', 
-        'Email': 'robertowright@gmail.com', 'Position': 'IT sales professional'}
-    new = {'FirstName': 'Roberto', 'LastName': 'Wright', 'Gender': 'M', 'DateOfBirth': '1993-04-28', 
-        'Email': 'robertowright@gmail.com', 'Position': 'IT sales professional'}
+    old = {
+        "Gender":"M"
+    }
+    new = {
+        "Gender":"F"
+    }
 
     old1 = {'FirstName': 'Jessica', 'LastName': 'Rice', 'Gender': 'M', 'DateOfBirth': '2008-08-24', 
             'Email': 'jessicarice@gmail.com', 'Position': 'Magazine journalist'}
     new1 = {'FirstName': 'Jessica', 'LastName': 'PRice', 'Gender': 'M', 'DateOfBirth': '2008-08-24', 
             'Email': 'jessicarice@gmail.com', 'Position': 'Magazine journalist'}
 
-    # producer1.put_producer("put", old, new)
 
-    delete_record1 = {'FirstName': 'Roberto', 'LastName': 'Wright', 'Gender': 'M', 'DateOfBirth': '1993-04-28', 
-        'Email': 'robertowright@gmail.com', 'Position': 'IT sales professional'}
+
+    delete_record1 = {
+        "FirstName":"Roberto"
+    }
 
     delete_record2 = {"FirstName": "Jessica", "LastName": "PRice", "Gender": "M", "DateOfBirth": "2008-08-24", 
                         "Email": "jessicarice@gmail.com", "Position": "Magazine journalist"}
 
+    # producer1.get_producer("get", condition)
+    # producer1.put_producer("put", old, new)
     producer1.delete_producer("delete", delete_record1)

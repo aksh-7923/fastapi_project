@@ -6,7 +6,7 @@ def create_consumer(bootstrap_servers):
 
     consumer_config = {
         'bootstrap.servers': bootstrap_servers,
-        'group.id': 62,
+        'group.id': 201,
         'auto.offset.reset': 'earliest'
     }
     return Consumer(consumer_config)

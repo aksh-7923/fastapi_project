@@ -49,7 +49,7 @@ class Consumers():
             msg = self.read_msgs()
 
             if msg:
-                Utility().write_json("output.json", msg)
+                Utility().add_record("output.json", msg)
             elif msg is None:
                 continue
             else:
@@ -64,7 +64,7 @@ class Consumers():
         while True:
             msg = self.read_msgs()
             if msg:
-                Utility().update("output.json", msg)
+                Utility().update_record("output.json", msg)
 
 
     def delete_operation(self, topic):
@@ -77,15 +77,19 @@ class Consumers():
 def callback(company_name, operation, future):
     print("Task completed for company '{}', operation '{}'. Result: {}".format(company_name, operation, future.result()))
 
-def parameter_consumer(parameter_queue, executor):
+def parameter_consumer(parameter_queue):
 
+    global executor  # Declare executor as global
+    global executor_lock
+    global parameter_queue_lock
     while True:
-        param = parameter_queue.get()  # Wait for a new parameter
+        with parameter_queue_lock:
+            param = parameter_queue.get()  # Wait for a new parameter
+
         if param[0].lower() == 'exit' or param[1].lower() == 'exit':
             break
 
         company_name, operation = param
-
         # Create a new instance of Consumers for each task with the given company_name
         my_instance = Consumers(company_name)
 
@@ -99,31 +103,77 @@ def parameter_consumer(parameter_queue, executor):
         else:
             print("Invalid operation. Please enter 'get', 'put', or 'delete'.")
             continue
+        
+        # Acquire lock before accessing the shared executor
+        with executor_lock:
+            # Submit task to the thread pool with the callback function
+            if executor:
+                future = executor.submit(task_function)
+                print(f" executing {operation} operation for {company_name}")
+                future.add_done_callback(lambda f, c=company_name, op=operation: callback(c, op, f))
 
-        # Submit task to the thread pool with the callback function
-        future = executor.submit(task_function)
-        future.add_done_callback(lambda f, c=company_name, op=operation: callback(c, op, f))
+        time.sleep(5)
+
+
+def pool_manager(parameter_queue, max_pools):
+
+    global executor
+    global executor_lock
+    global parameter_queue_lock
+    while True:
+        # Check the number of tasks in the queue
+        with parameter_queue_lock:
+            num_tasks = parameter_queue.qsize()
+            print(num_tasks)
+
+        if num_tasks > 0:
+            if not executor :
+                # Create a new pool if there are tasks and either no pool exists or the existing pool is empty
+                with executor_lock:
+                    executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_pools)
+                    print("new executror created")
+        elif num_tasks == 0 and executor:
+            # Shutdown the pool if there are no tasks and the pool exists
+            with executor_lock:
+                executor.shutdown()
+                print("removing extra executor")
+                executor = None
+
+        # Sleep for a short duration before checking again
+        time.sleep(20)
 
 
 if __name__ == "__main__":
     # my_instance = MyClass()
-
     # Use ThreadPoolExecutor with a maximum of 3 concurrent threads
-    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
-        parameter_queue = queue.Queue()
+    # with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
 
-        initial_company_name = input("Enter the company name (or 'exit' to quit): ")
-        initial_operation = input("Enter the operation ('get', 'post', 'put', 'delete'): ")
-        # Start the parameter consumer thread after adding an initial parameter to the queue
-        initial_param = (initial_company_name, initial_operation)
-        parameter_queue.put(initial_param)
+    parameter_queue = queue.Queue()
+    global executor
+    global executor_lock
+    global parameter_queue_lock
+    # executor = concurrent.futures.ThreadPoolExecutor(max_workers=3)  # Initialize executor with max_workers
+    executor = None
+    executor_lock = threading.Lock()  # Lock to protect the executor
+    parameter_queue_lock = threading.Lock()
+    max_pools = 3  # Maximum number of pools
 
-        # Start the parameter consumer thread
-        parameter_consumer_thread = threading.Thread(target=parameter_consumer, args=(parameter_queue, executor))
-        parameter_consumer_thread.start()
+    initial_company_name = input("Enter the company name (or 'exit' to quit): ")
+    initial_operation = input("Enter the operation ('get', 'post', 'put', 'delete'): ")
 
-        while True:
-            time.sleep(15)
+    parameter_queue.put((initial_company_name, initial_operation))
+
+    # Start the pool manager thread
+    pool_manager_thread = threading.Thread(target=pool_manager, args=(parameter_queue, max_pools))
+    pool_manager_thread.start()
+
+    # Start the parameter consumer thread after adding an initial parameter to the queue
+    parameter_consumer_thread = threading.Thread(target=parameter_consumer, args=(parameter_queue, ))
+    parameter_consumer_thread.start()
+
+    while True:
+        time.sleep(10)
+        with parameter_queue_lock:
             # Dynamically add new parameters to the queue
             company_name = input("Enter the company name (or 'exit' to quit): ")
             if company_name.lower() == 'exit':
@@ -136,47 +186,20 @@ if __name__ == "__main__":
             # Combine company_name and operation into a tuple and add to the queue
             new_param = (company_name, operation)
             parameter_queue.put(new_param)
+            
+        time.sleep(15)
+        
 
 
-        # Signal the parameter consumer thread to exit
-        parameter_queue.put(('exit', 'exit'))
+    # Signal the parameter consumer thread to exit
+    parameter_queue.put(('exit', 'exit'))
 
-        # Wait for the parameter consumer thread to finish
-        parameter_consumer_thread.join()
+    # Wait for the parameter consumer thread to finish
+    parameter_consumer_thread.join()
+    # Wait for the pool manager thread to finish
+    pool_manager_thread.join()
 
     print("Script has exited.")
-
-
-    # def consumer_operation(self, topic, operation):
-    #     self.consumer.subscribe([topic])
-
-    #     # Start consuming messages
-    #     while True:
-    #         msg = self.read_msgs()
-
-    #         if operation=="get":
-    #             write_json(json.loads(msg.value().decode('utf-8')))
-    #         elif operation=="put":
-    #             update(msg)
-    #         elif operation=="delete":
-    #             delete_record(msg)
-    #         else:
-    #             print("Operation not allowed!!")
-    #             break
-
-# def callback(param, future):
-#     print("Task completed for param '{}'. Result: {}".format(param, future.result()))
-
-# def parameter_producer(parameter_queue):
-#     # This function runs in a separate thread or process
-#     while True:
-#         # Dynamically add new parameters to the queue
-#         new_param = input("Enter a new parameter (or 'exit' to quit): ")
-#         if new_param.lower() == 'exit':
-#             break
-#         parameter_queue.put(new_param)
-
-
 
 
 # if __name__=="__main__":
